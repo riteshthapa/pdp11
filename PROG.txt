@@ -1,0 +1,56 @@
+.BLKW 1000.                     ;INIT STACK
+START:  MOV #START, SP          ;SET SP TO STARTING POINT
+        TST M                   ;TEST FOR -VE INPUT
+        BLT ERROR
+        TST N                   ;TEST FOR -VE INPUT
+        BLT ERROR
+
+                                ;ACTIVATION RECORD SETUP
+DRVR:   MOV M, -(SP)            ;MOVE M INTO 1ST SPOT IN SP -2
+        SUB #2, SP              ;FUTURE M-1 -4
+        MOV N, -(SP)            ;MOVE N INTO 2ND SPOT -6
+        SUB #2, SP              ;FUTURE RESULT -8
+        MOV #RTNADD, -(SP)      ;MOVE RETURN ADD INTO SP
+        JMP RECMUL              ;JUMP TO SUBROUTINE
+
+                                ;FINAL STEP & CLEANUP
+RTNADD: MOV 2(SP), RESULT       ;COPY RESULT
+        ADD 10., SP             ;SET SP BACK TO INITIAL POSITION
+        HALT                    ;STOP
+
+        ; SUBROUTINE BEGINS
+
+RECMUL: CMP 8.(SP),#0           ;CHECK TO SEE IF INPUT IS 0
+        BEQ ANDA                ;IF IT IS, MOVE TO ANDA
+        CMP 8.(SP),#1           ;CHECK TO SEE INPUT IS 1
+        BEQ BASE                ;IF IT IS, MOVE TO BASE CASE
+        MOV 8.(SP),6.(SP)       ;COPY M TO TMP M
+        DEC 6.(SP)              ;TMP M-1
+        MOV SP, R5              ;COPY SP POSITION TO R5
+        MOV 6.(R5),-(SP)        ;NEW AC RECORD - RADD INTO SP
+        SUB #2, SP              ;MOV SP UP
+        MOV N,-(SP)             ;MOV N INTO SP
+        SUB #2, SP              ;MOV SP UP
+        MOV #CALCT, -(SP)       ;GOES TO DO THE MATH
+        JMP RECMUL
+
+CALCT:  MOV 2.(SP), R1          ;DO THE MATH - COPY RSLT TO R1
+        ADD #10., SP            ;CLEAR STACK
+        ADD 4.(SP), R1          ;ADD N TO RSLT
+        MOV R1, 2.(SP)          ;COPY RSLT BACK TO STACK
+        JMP @0(SP)              ;JUMP BACK TO RETURN ADDRESS
+
+ANDA:   MOV #0, 2.(SP)
+        JMP @0(SP)
+
+BASE:   MOV N, 2.(SP)
+        JMP @0(SP)
+
+
+ERROR:	MOV -32768., RESULT
+				HALT
+
+M:      .BLKW 1                 ;INPUT 1
+N:      .BLKW 1                 ;INPUT 2
+RESULT: .BLKW 1                 ;OUTPUT
+        .END
